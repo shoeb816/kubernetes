@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  namespace: ppims
+  labels:
+    app: config
+  name: config-np-svc
+spec:
+  ports:
+  - name: config-np-svc
+    port: 8092
+    protocol: TCP
+    targetPort: 8092
+    nodePort: 30015
+  selector:
+    app: config
+  type: NodePort
+status:
+  loadBalancer: {}

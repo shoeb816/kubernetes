@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-training
+  name: ngpims-training
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngpims-training
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ngpims-training
+    spec:
+      containers:
+      - name: training
+        image: shoeb0005/ngpims-training:v1
+        ports:
+        - containerPort: 9006
+        imagePullPolicy: Always
+        env:   # Setting Enviornmental Variables
+        - name: EUREKA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: eureka_svc
+              
+        - name: DB_HOST   # Setting Database host address from configMap
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret  # name of configMap
+              key: oradb_host
+                  
+        - name: DB_NAME  # Setting Database name from configMap
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oradb_db_name
+
+        - name: DB_PORT  # Setting Database name from configMap
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oradb_db_port
+              
+        - name: ORADB_USER  # Setting Database username from Secret
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret # Secret Name
+              key: oradb_username
+              
+        - name: ORADB_PASSWORD # Setting Database password from Secret
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oradb_password
+                  
+        - name: OAUTH2_ID # 
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oauth_id
+        - name: OAUTH2_SECRET # 
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oauth_secret
+              
+        - name: CONFIG_CSVC # 
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: config_csvc
+                           
+        - name: GATEWAY_CSVC # 
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: gateway_csvc
+        
+        resources: {}
+status: {}

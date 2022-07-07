@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-uaa-ui
+  name: uaa-ui-cip-svc
+spec:
+  ports:
+  - name: uaa-ui-in-port
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: ngpims-uaa-ui
+  type: ClusterIP
+status:
+  loadBalancer: {}

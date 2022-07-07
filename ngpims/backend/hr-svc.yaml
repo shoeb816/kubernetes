@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-hr
+  name: hr-svc
+spec:
+  ports:
+  - name: hr-out-port
+    port: 9005
+    targetPort: 9005
+    nodePort: 30045
+    protocol: TCP
+  selector:
+    app: ngpims-hr
+  type: NodePort
+status:
+  loadBalancer: {}

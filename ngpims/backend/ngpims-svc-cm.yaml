@@ -1,0 +1,31 @@
+apiVersion: v1
+data:
+  eureka_svc: http://eureka:admin@eureka-server-svc:8761/eureka
+  eureka_port: '30010'
+  
+####Kubernetes SVC
+  config_csvc: config-cip-svc
+  gateway_csvc: gateway-cip-svc
+  uaa_csvc: uaa-cip-svc
+  uaa_ui_csvc: uaa-ui-cip-svc
+  
+####Frontend Enviorments
+  domain_name: '192.168.1.200'
+  api_domain_name: '192.168.1.200'
+  gateway_port: '30020'
+
+  
+####AUTH Token
+  #oauth_id: ibcsplanningidsdp
+  #oauth_secret: 'planningIdsdpsha$@#929%'
+
+
+####Cloud Config
+  cloud_config_url: https://gitlab.ibcs-primax.com/ngpims/microservice/ngpims-cloud-config-ymls.git
+  
+kind: ConfigMap
+metadata:
+  namespace: ppims
+  labels:
+    app: ngpims-svc-cm
+  name: ngpims-svc-cm 

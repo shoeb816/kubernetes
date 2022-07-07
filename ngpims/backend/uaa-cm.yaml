@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  gateway_csvc: gateway-cip-svc
+  oauth_id: ibcsplanningidsdp
+  oauth_secret: planningIdsdpsha$@#929%
+  uaa_ui_csvc: uaa-ui-cip-svc
+kind: ConfigMap
+metadata:
+  labels:
+    app: uaa-cm
+  name: uaa-cm
+

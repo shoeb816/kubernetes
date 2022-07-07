@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-uaa
+  name: uaa-svc
+spec:
+  ports:
+  - name: uaa-out-port
+    port: 9001
+    targetPort: 9001
+    nodePort: 30025
+    protocol: TCP
+  selector:
+    app: ngpims-uaa
+  type: NodePort
+status:
+  loadBalancer: {}

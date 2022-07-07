@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  namespace: ppims
+  labels:
+    app: config
+  name: config
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: config
+    spec:
+      imagePullSecrets:
+      - name: docker-reg-secret
+      containers:
+      - image: shoeb0005/ngpims-config:v1
+        name: config
+        ports:
+        - containerPort: 8092
+        resources: {}
+        imagePullPolicy: Always
+        env:
+        - name: EUREKA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: eureka_svc
+              
+        - name: CLOUD_CONFIG_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: cloud_config_url      
+              
+        - name: CLOUD_CONFIG_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: cloud_config_username
+
+        - name: CLOUD_CONFIG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: cloud_config_password    
+      #tolerations:
+      #  - key: "db"
+      #    value: "postgres"
+      #    operator: "Equal"
+      #    effect: "NoSchedule"
+      #affinity:
+      #  nodeAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #      nodeSelectorTerms:
+      #      - matchExpressions:
+      #        - key: db
+      #          operator: In
+      #          values:
+      #          - postgres
+status: {}

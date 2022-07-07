@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-react-training-ui
+  name: training-ui-cip-svc
+spec:
+  ports:
+  - name: training-ui-in-port
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: ngpims-react-training-ui
+  type: ClusterIP
+status:
+  loadBalancer: {}

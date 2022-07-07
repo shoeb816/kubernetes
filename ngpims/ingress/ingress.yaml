@@ -1,0 +1,99 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-ppims-app
+  namespace: ppims
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+######Rule-1
+spec:
+  rules:
+  - host: sso.police.gov.bd
+    http:
+      paths:
+      #- path: /(.*)
+      - path: /(.*)
+        pathType: Prefix
+        backend:
+          service:
+           name: uaa-ui-cip-svc
+           port: 
+            number: 3000
+      - path: /recruit
+        pathType: Prefix
+        backend:
+          service:
+           name: uaa-ui-cip-svc
+           port: 
+            number: 3000    
+#  - host: acl.police.gov.bd
+#    http:
+#      paths:
+#      - path: /(.*)
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: acl-ui-cip-svc
+#           port: 
+#            number: 3000
+#  - host: recruitment.police.gov.bd
+#    http:
+#      paths:
+#      - path: /(.*)
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: recruit-ui-cip-svc
+#           port: 
+#            number: 3000
+#  - host: leave.police.gov.bd
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: leave-ui-cip-svc
+#           port: 
+#            number: 3000
+#  - host: training.police.gov.bd
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: training-ui-cip-svc
+#           port: 
+#            number: 3000
+#  - host: hr.police.gov.bd
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: hr-ui-cip-svc
+#           port: 
+#            number: 3000
+#  - host: action.police.gov.bd
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: action-ui-cip-svc
+#           port: 
+#            number: 3000
+#  - host: special.police.gov.bd
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          service:
+#           name: special-ui-cip-svc
+#           port: 
+#            number: 3000

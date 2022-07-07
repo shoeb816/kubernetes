@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-training
+  name: training-cip-svc
+spec:
+  ports:
+  - name: training-in-port
+    port: 9006
+    targetPort: 9006
+    protocol: TCP
+  selector:
+    app: ngpims-training
+  type: ClusterIP
+status:
+  loadBalancer: {}

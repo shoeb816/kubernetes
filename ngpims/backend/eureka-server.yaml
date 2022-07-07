@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  namespace: ppims
+  labels:
+    app: eureka-server
+  name: eureka-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eureka-server
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: eureka-server
+    spec:
+      containers:
+      imagePullSecrets:
+      - name: docker-reg-secret
+      - image: shoeb0005/ngpims-eureka:v1
+        name: eureka
+        ports:
+        - containerPort: 8761
+        imagePullPolicy: Always
+        resources: {}
+        env:
+        - name: EUREKA_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: eureka_port
+      #tolerations:
+      #  - key: "db"
+      #    value: "postgres"
+      #    operator: "Equal"
+      #    effect: "NoSchedule"
+      #affinity:
+      #  nodeAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #      nodeSelectorTerms:
+      #      - matchExpressions:
+      #        - key: db
+      #          operator: In
+      #          values:
+      #          - postgres
+status: {}

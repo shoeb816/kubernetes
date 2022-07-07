@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: default-backend
+  #namespace: ppims
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: default-backend
+  template:
+    metadata:
+      labels:
+        app: default-backend
+    spec:
+      containers:
+      - image: kodekloud/ecommerce:404
+        imagePullPolicy: Always
+        name: simple-webapp
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  name: default-backend-service
+  namespace: ppims
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: default-backend
+  type: ClusterIP
+status:
+  loadBalancer: {}

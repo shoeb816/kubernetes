@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-special-activity
+  name: special-activity-svc
+spec:
+  ports:
+  - name: special-activity-out-port
+    port: 9008
+    targetPort: 9008
+    nodePort: 30055
+    protocol: TCP
+  selector:
+    app: ngpims-special-activity
+  type: NodePort
+status:
+  loadBalancer: {}

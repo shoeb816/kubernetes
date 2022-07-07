@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-leave
+  name: leave-svc
+spec:
+  ports:
+  - name: leave-out-port
+    port: 9004
+    targetPort: 9004
+    nodePort: 30040
+    protocol: TCP
+  selector:
+    app: ngpims-leave
+  type: NodePort
+status:
+  loadBalancer: {}

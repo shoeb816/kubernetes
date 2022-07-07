@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-special-activity
+  name: special-activity-cip-svc
+spec:
+  ports:
+  - name: special-activity-in-port
+    port: 9008
+    targetPort: 9008
+    protocol: TCP
+  selector:
+    app: ngpims-special-activity
+  type: ClusterIP
+status:
+  loadBalancer: {}

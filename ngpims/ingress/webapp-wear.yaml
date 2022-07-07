@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-wear
+  namespace: ppims
+spec:
+  selector:
+    matchLabels:
+      app: webapp-wear
+  template:
+    metadata:
+      labels:
+        app: webapp-wear
+    spec:
+      containers:
+      - image: kodekloud/ecommerce:apparels
+        imagePullPolicy: Always
+        name: simple-webapp
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  namespace: ppims
+  name: wear-service
+  #namespace: app-space
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: webapp-wear
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  namespace: ppims
+  name: wear-service-np
+  #namespace: app-space
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+    nodePort: 30005
+  type: NodePort
+  selector:
+    app: webapp-wear    
+    

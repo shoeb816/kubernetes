@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-leave
+  name: leave-cip-svc
+spec:
+  ports:
+  - name: leave-in-port
+    port: 9004
+    targetPort: 9004
+    protocol: TCP
+  selector:
+    app: ngpims-leave
+  type: ClusterIP
+status:
+  loadBalancer: {}

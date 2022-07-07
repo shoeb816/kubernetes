@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-common
+  name: common-cip-svc
+spec:
+  ports:
+  - name: common-in-port
+    port: 9003
+    targetPort: 9003
+    protocol: TCP
+  selector:
+    app: ngpims-common
+  type: ClusterIP
+status:
+  loadBalancer: {}

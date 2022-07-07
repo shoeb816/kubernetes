@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-react-recruit-ui
+  name: recruit-ui-cip-svc
+spec:
+  ports:
+  - name: recruit-ui-in-port
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: ngpims-react-recruit-ui
+  type: ClusterIP
+status:
+  loadBalancer: {}

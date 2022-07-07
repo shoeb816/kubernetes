@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ppims
+  creationTimestamp: null
+  labels:
+    app: ngpims-react-leave-ui
+  name: ngpims-react-leave-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngpims-react-leave-ui
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ngpims-react-leave-ui
+    spec:
+      imagePullSecrets:
+      - name: docker-reg-secret
+      containers:
+      - name: react-leave-ui
+        image: shoeb0005/ngpims-react-leave-ui:v4
+        ports:
+        - containerPort: 3000
+        imagePullPolicy: Always
+        env:   # Setting Enviornmental Variables
+        #- name: GATEWAY_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: gateway_csvc        
+
+        - name: DOMAIN   # Setting Database host address from configMap
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm  # name of configMap
+              key: domain_name
+        - name: API_DOMAIN  # Setting Database name from configMap
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm
+              key: api_domain_name
+        - name: GW_PORT  # Setting Database username from Secret
+          valueFrom:
+            configMapKeyRef:
+              name: ngpims-svc-cm # Secret Name
+              key: gateway_port
+        - name: OAUTH2_ID # 
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oauth_id
+        - name: OAUTH2_SECRET # 
+          valueFrom:
+            secretKeyRef:
+              name: ngpims-app-secret
+              key: oauth_secret     
+        #- name: GATEWAY_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: gateway_csvc
+        #- name: UAA_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: uaa_csvc
+        #- name: PPS_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: pps_csvc
+        #- name: COMMON_SERVICE_UI_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: common_service_ui_csvc
+        #- name: RMS_FRONTEND_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: rms_frontend_csvc
+        #- name: NPM_FRONTEND_CSVC # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: npm_frontend_csvc
+        #- name: OAUTH2_ID # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: oauth_id
+        #- name: OAUTH2_SECRET # 
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: sdpp-svc-cm
+        #      key: oauth_secret
+        #resources: {}
+      #tolerations:
+      #  - key: "db"
+      #    value: "postgres"
+      #    operator: "Equal"
+      #    effect: "NoSchedule"  
+      #affinity:
+      #  nodeAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #      nodeSelectorTerms:
+      #      - matchExpressions:
+      #        - key: app
+      #          operator: In
+      #          values:
+      #          - frontend   
+status: {}

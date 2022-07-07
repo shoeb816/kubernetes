@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngpims-gateway
+  namespace: ppims
+spec:
+  selector:
+    matchLabels:
+      app: ngpims-gateway
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ngpims-gateway
+    spec:
+      #imagePullSecrets:
+      #- name: docker-reg-secret
+      containers:
+        - name: gateway
+          image: shoeb0005/ngpims-gateway:v1
+          ports:
+            - containerPort: 8081
+          imagePullPolicy: Always            
+          env:   # Setting Enviornmental Variables
+            - name: EUREKA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ngpims-svc-cm
+                  key: eureka_svc
+              
+            - name: DB_HOST   # Setting Database host address from configMap
+              valueFrom:
+                secretKeyRef:
+                  name: ngpims-app-secret  # name of configMap
+                  key: oradb_host
+                  
+            - name: DB_NAME  # Setting Database name from configMap
+              valueFrom:
+                secretKeyRef:
+                  name: ngpims-app-secret
+                  key: oradb_db_name
+
+            - name: DB_PORT  # Setting Database name from configMap
+              valueFrom:
+                secretKeyRef:
+                  name: ngpims-app-secret
+                  key: oradb_db_port
+                  
+            - name: ORADB_USER  # Setting Database username from Secret
+              valueFrom:
+                secretKeyRef:
+                  name: ngpims-app-secret # Secret Name
+                  key: oradb_username
+                  
+            - name: ORADB_PASSWORD # Setting Database password from Secret
+              valueFrom:
+                secretKeyRef:
+                  name: ngpims-app-secret
+                  key: oradb_password
+                  
+          #livenessProbe:
+          #  httpGet:
+          #    path: /actuator/health
+          #    port: 8081
+          #  initialDelaySeconds: 30
+          #  periodSeconds: 40
