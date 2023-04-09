@@ -1,0 +1,30 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+    name: direct-csi-min-io
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+   name: storage-srv-pv
+spec:
+   capacity:
+      storage: 1Gi
+   volumeMode: Filesystem
+   accessModes:
+   - ReadWriteOnce
+   persistentVolumeReclaimPolicy: Retain
+   storageClassName: local-storage
+   local:
+      path: /pv/minio/data
+   nodeAffinity:
+      required:
+         nodeSelectorTerms:
+         - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - knode2

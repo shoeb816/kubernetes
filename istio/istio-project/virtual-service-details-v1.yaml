@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: details
+spec:
+  hosts:
+  - details
+  http:
+  - route:
+    - destination:
+        host: details
+        subset: v1
+    fault:
+      delay:
+        fixedDelay: 5s
+        percent: 100
+    #fault:
+    #  abort:
+    #    httpStatus: 500
+    #    percentage:
+    #      value: 100
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      #retryOn: connect-failure,refused-stream,unavailable,cancelled,resource-exhausted,retriable-status-codes,gateway-error

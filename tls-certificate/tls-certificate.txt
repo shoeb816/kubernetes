@@ -1,0 +1,47 @@
+https://github.com/kubernetes/dashboard/tree/master/docs/user
+
+shoeb@master:/kubernetes/dashboard$openssl genrsa -des3 -passout pass:over4chars -out dashboard.pass.key 2048
+shoeb@master:/kubernetes/dashboard$openssl rsa -passin pass:over4chars -in dashboard.pass.key -out dashboard.key
+shoeb@master:/kubernetes/dashboard$rm dashboard.pass.key
+shoeb@master:/kubernetes/dashboard$openssl req -new -key dashboard.key -out dashboard.csr
+shoeb@master:/kubernetes/dashboard$openssl x509 -req -sha256 -days 3650 -in dashboard.csr -signkey dashboard.key -out dashboard.crt
+
+shoeb@master:/kubernetes/dashboard$ ls -l /kubernetes/dashboard/certs/
+total 8
+-rw-rw-r-- 1 shoeb shoeb 1383 Apr  2 00:59 dashboard.crt
+-rw------- 1 shoeb shoeb 1679 Apr  2 01:00 dashboard.key
+
+
+shoeb@master:/kubernetes/dashboard$ kubectl create secret generic kubernetes-dashboard-certs --from-file=/kubernetes/dashboard/certs/ -n kubernetes-dashboard
+
+shoeb@master:/kubernetes/dashboard$ kd secret kubernetes-dashboard-certs -n kubernetes-dashboard
+Name:         kubernetes-dashboard-certs
+Namespace:    kubernetes-dashboard
+Labels:       k8s-app=kubernetes-dashboard
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+dashboard.crt:  1383 bytes
+dashboard.key:  1679 bytes
+
+shoeb@master:/kubernetes/dashboard$ kubectl create --edit -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+      containers:
+      - args:
+        - --tls-cert-file=/tls.crt
+        - --tls-key-file=/tls.key
+		
+      volumeMounts:
+      - name: kubernetes-dashboard-certs
+        mountPath: /certs	
+		
+     volumes:
+     - name: kubernetes-dashboard-certs
+       secret:
+          secretName: kubernetes-dashboard-certs
+		  
+shoeb@master:/kubernetes/dashboard$ kubectl -n kubernetes-dashboard create token admin-user
+

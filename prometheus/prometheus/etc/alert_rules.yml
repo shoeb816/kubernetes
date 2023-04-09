@@ -1,0 +1,69 @@
+groups:
+- name: Service
+  rules:
+
+  # Alert for any instance that is unreachable for >2 minutes.
+  - alert: Instance Down
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: Disaster
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+
+- name: Server Load
+  rules:      
+  # Alert for any instance that has a high load for >2 minutes .
+  - alert: High CPU Load
+    expr: node_load1 > 0.8
+    for: 2m
+    labels:
+      severity: page
+    annotations:
+      summary: "Instance {{ $labels.instance }} under high load"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} is under high load."
+
+  # Alert for any instance that has 10< percent Disk Space Free .
+- name: Disk Space
+  rules:
+  - alert: 10 Percent or Less Disk Space Free 
+    expr: node_filesystem_free_percent <= 10
+    labels:
+      severity: Average
+    annotations:
+      summary: "Instance {{ $labels.instance }} has 10% or less Free disk space"
+      description: "{{ $labels.instance }} has only {{ $value }}% or less free."
+
+- name: Memory Load
+  rules:
+  - alert: High Memory Load
+    expr: ((node_memory_MemTotal_bytes - node_memory_MemFree_bytes) / node_memory_MemTotal_bytes) * 100 > 90
+    for: 1m
+    labels:
+      severity: High
+    annotations:
+      summary: "Server memory is almost full"
+      description: "Docker host memory usage is {{$value}}%. Reported by instance {{ $labels.instance }} of job {{ $labels.job }}."
+
+#
+#- name: Others
+#  rules:
+#  - alert: HighRequestLatency
+#    expr: job:request_latency_seconds:mean5m{job="myjob"} > 0.5
+#    for: 10m
+#    labels:
+#      severity: page
+#    annotations:
+#      summary: High request latency
+
+
+#  # Alert for any instance that has a median request latency >1s.
+#  - alert: APIHighRequestLatency
+#    expr: api_http_request_latencies_second{quantile="0.5"} > 1
+#    for: 10m
+#    labels:
+#      severity: Disaster
+#    annotations:
+#      summary: "High request latency on {{ $labels.instance }}"
+#      description: "{{ $labels.instance }} has a median request latency above 1s (current value: {{ $value }}s)"     

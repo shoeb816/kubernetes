@@ -1,0 +1,137 @@
+##############################Backing Up and Restoring On-premises Kubernetes Workloads Using Velero with Restic##############################
+how to back up and restore Kubernetes workloads deployed
+
+1. Deploy an Object Store
+Restic requires an object store as the backup destination for workload backups.
+
+To deploy and configure a MinIO Server on a Linux Ubuntu VM as the Velero and Restic backend object store:
+
+a. Install the MinIO app:
+[root@devopsrnd minio]# vi docker-compose.yaml
+version: '3.7'
+
+# Settings and configurations that are common for all containers
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2021-09-18T18-09-59Z
+  command: server --console-address ":30081" /data
+  ports:
+    - "30080:9000"
+    - "30081:30081"
+  environment:
+    MINIO_ROOT_USER:  admin
+    MINIO_ROOT_PASSWORD: M1ni0@3C
+    TZ: Asia/Dhaka
+#  networks:
+#         - sdpp01_net
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+
+services:
+  minio1:
+    <<: *minio-common
+    container_name: miniostorage
+    hostname: minio1
+    volumes:
+    - /k_storage/minio_storage:/data
+    restart: always
+
+b.Create MinIO Bucket
+1. Launch the Mino browser and log in to your object store.
+2. Click the Create Bucket icon.
+3. Enter the bucket name, for example: kubebucket.
+4. Verify that the bucket was created.
+
+c.Configure MinIO Bucket
+By default, a new MinIO bucket is read-only, but for our Velero backup and restore the MinIO bucket must be read-write.
+To set the new kubebucket bucket to read-write:
+1. Select the bucket and click on the dots link.
+2. Select Edit Policy.
+3. Change the policy to Read and Write.
+4. Click Add.
+
+
+Install the Velero CLI on Your Workstation
+wget https://github.com/vmware-tanzu/velero/releases/download/v1.5.3/velero-v1.5.3-linux-amd64.tar.gz
+
+shoeb@kmaster:/shoeb/velero$tar xvzf velero-v1.5.3-linux-amd64.tar.gz
+shoeb@kmaster:/shoeb/velero$sudo mv velero-v1.5.3-linux-amd64/velero /usr/local/bin/
+shoeb@kmaster:/shoeb/velero$rm -rf velero-v1.5.3-linux-amd64/
+
+
+b.Create a Velero-specific credentials file (credentials-velero) in your Velero directory:
+shoeb@kmaster:/shoeb/velero$cat <<EOF>> minio.credentials
+[default]
+aws_access_key_id=minio
+aws_secret_access_key=minio123
+EOF
+
+shoeb@kmaster:/shoeb/velero$ cat minio.credentials
+[default]
+aws_access_key_id=admin
+aws_secret_access_key=M1ni0@3C
+
+
+shoeb@kmaster:/shoeb/velero$velero install \
+--provider aws \
+--plugins velero/velero-plugin-for-aws:v1.4.1 \
+--bucket kubebucket \
+--secret-file ./minio.credentials \
+--backup-location-config \
+region=minio,s3ForcePathStyle=true,s3Url=http://192.168.1.12:30081,publicUrl=http://192.168.1.12:30081
+
+
+shoeb@kmaster:/shoeb/velero$ velero backup get 
+shoeb@kmaster:/shoeb/velero$ velero backup-location get
+
+#################*********Velero and Restic*********################# 
+https://docs.pivotal.io/tkgi/1-13/velero-install.html#minio-install
+velero install \
+--provider aws \
+--plugins velero/velero-plugin-for-aws:v1.4.1 \
+--bucket velero \
+--secret-file credentials-velero \ 
+--use-volume-snapshots=false \
+--use-restic \
+--snapshot-location-config region=eu-west-1 \
+--backup-location-config \ 
+region=minio,s3ForcePathStyle="true",s3Url=http://minio.velero.svc:9000,publicUrl=http://<ip:node-port>
+
+
+
+#################Back Up a Cluster
+shoeb@kmaster:/shoeb/velero$ velero backup create asaiapp-backup --include-namespaces asaiapp
+shoeb@kmaster:/shoeb/velero$ velero backup describe asaiapp-backup
+shoeb@kmaster:/shoeb/velero$ kubectl describe backups.velero.io asaiapp-backup -n velero
+
+
+#################Restore a Cluster 
+shoeb@kmaster:/shoeb/velero$ velero restore create --from-backup asaiapp-backup
+Restore request "asaiapp-backup-20220606113755" submitted successfully.
+Run `velero restore describe asaiapp-backup-20220606113755` or `velero restore logs asaiapp-backup-20220606113755` for more details.
+
+
+#################Clean up
+shoeb@kmaster:/shoeb/velero$ velero backup delete asaiapp-backup
+
+
+#################Schedule a Cluster
+shoeb@kmaster:/shoeb/velero$ velero schedule create nginx-daily --schedule="0 1 * * *" --selector app=nginx
+
+❯ velero backup delete nginx-backup
+
+To remove everything from this test from the cluster
+
+❯ kubectl delete namespace/sailboat clusterrolebinding/sailboat
+
+❯ kubectl delete crds -l component=sailboat
+
+❯ kubectl delete -f examples/nginx-app/base.yaml
+
+
+
+####Delete NameSpace Manually
+kubectl get namespace velero -o json >tmp.json
+curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8001/api/v1/namespaces/velero/finalize

@@ -1,0 +1,41 @@
+#kind: Pod
+#apiVersion: v1
+#metadata:
+#  name: rbd-test-pod
+#spec:
+#  containers:
+#  - name: rbd-test-pod
+#    image: busybox
+#    command:
+#      - "/bin/sh"
+#    args:
+#      - "-c"
+#      - "touch /mnt/RBD-SUCCESS && exit 0 || exit 1"
+#    volumeMounts:
+#      - name: testclaim
+#        mountPath: "/mnt"
+#  restartPolicy: "Never"
+#  volumes:
+#    - name: testclaim
+#      persistentVolumeClaim:
+#        claimName: testclaim
+#
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: test-pod
+  name: storageclass-pvc01-pod01
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: storageclass-pvc01
+      mountPath: /mnt/foo
+      readOnly: false
+  volumes:
+  - name: storageclass-pvc01
+    persistentVolumeClaim:
+      claimName: testclaim

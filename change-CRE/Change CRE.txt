@@ -1,0 +1,60 @@
+https://www.lisenet.com/2022/upgrading-homelab-kubernetes-cluster-from-1-23-to-1-24/
+
+###########Live switching of Kubernetes container runtime | From Docker to Containerd
+1. First Cordon Worker Node one by One and drain all pod from Node. Last go for contron-plane.
+
+shoeb@hostname:~$kubectl cordon master (First Start with Worker Node)
+shoeb@hostname:~$kubectl drain master --ignore-daemonsets (First Start with Worker Node)
+
+2. Remove Docker and install Containerd.
+
+shoeb@hostname:~$sudo systemctl stop docker
+shoeb@hostname:~$sudo apt remove --purge docker-ce docker-ce-cli -y (Not Necessary)
+shoeb@hostname:~$sudo apt-get install containerd.io -y
+
+3. Check the namespace of Container Run Time.
+
+shoeb@hostname:~$sudo ctr namespaces list
+shoeb@hostname:~$sudo ctr --namespace moby container list
+
+4. Stop Kubelet Services.
+
+shoeb@hostname:~$sudo systemctl stop kubelet
+shoeb@hostname:~$sudo ctr --namespace moby container list
+
+5. Findout Containerd Configuration File and enable "CRI"
+
+shoeb@hostname:~$dpkg -L containerd.io | grep toml
+shoeb@hostname:~$sudo vi /etc/containerd/config.toml
+#disabled_plugins = ["cri"]
+shoeb@hostname:~$sudo systemctl restart containerd
+shoeb@hostname:~$#sudo systemctl status containerd
+
+6. Enable Kubelet to use CRI
+
+shoeb@hostname:~$sudo vi /var/lib/kubelet/kubeadm-flags.env
+shoeb@hostname:~$KUBELET_KUBEADM_ARGS="--network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.5 --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+shoeb@hostname:~$sudo systemctl restart kubelet
+shoeb@hostname:~$sudo systemctl status kubelet
+
+7. Check CRT Service
+shoeb@hostname:~$sudo ctr namespaces list
+shoeb@hostname:~$sudo ctr --namespace k8s.io container list
+
+8. Uncordon Node
+shoeb@hostname:~$kubectl uncordon master (First Start with Worker Node
+
+9.Users using kubeadm should be aware that the kubeadm tool stores the CRI socket for each host as an annotation in the Node object for that host.
+Change the value of kubeadm.alpha.kubernetes.io/cri-socket from /var/run/dockershim.sock to the CRI socket path of your choice
+shoeb@hostname:~$kubectl edit no master
+kubeadm.alpha.kubernetes.io/cri-socket: unix:///run/containerd/containerd.sock ###Replcae this Value/var/run/dockershim.sock
+
+shoeb@hostname:~$systemctl restart kubelet
+
+##For >1.24.xx version
+shoeb@hostname:~$sudo vi /var/lib/kubelet/kubeadm-flags.env
+shoeb@hostname:~$KUBELET_KUBEADM_ARGS="--pod-infra-container-image=k8s.gcr.io/pause:3.5 --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+shoeb@hostname:~$sudo systemctl restart kubelet
+shoeb@hostname:~$sudo systemctl status kubelet
+
+

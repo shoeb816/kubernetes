@@ -1,0 +1,27 @@
+groups:
+  - name: State_of_Docker_Containers 
+    rules:   
+    - record: number_of_running_containers
+      expr: engine_daemon_container_states_containers{state="running"}  
+      
+    - record: number_of_stopped_containers
+      expr: engine_daemon_container_states_containers{state="stopped"}
+
+    - record: number_of_paused_containers
+      expr: engine_daemon_container_states_containers{state="paused"}
+      
+  - name: Processing_Each_Containers  
+    rules:
+    - record: Total_Number_The_Number_of_Seconds_Takes_To_Process_Each_Containers
+      expr: engine_daemon_container_actions_seconds_count    
+      
+    - record: Total_Sum_The_Number_of_seconds_takes_to_process_each_containers
+      expr: engine_daemon_container_actions_seconds_sum
+
+  - name: Docker_memory_rules
+    rules:
+    - record: Docker_Node_memory_MemFree_percent
+      expr: 100 -(100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)
+    
+    - record: Docker_Node_emory_MemFree_in_GB
+      expr: engine_daemon_engine_memory_bytes / 1073741824

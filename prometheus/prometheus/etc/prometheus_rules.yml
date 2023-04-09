@@ -1,0 +1,18 @@
+groups:
+  - name: custom_memory_rules
+    rules:
+    - record: node_memory_MemFree_percent
+      expr: 100 -(100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)
+    
+    - record: node_memory_MemFree_in_GB
+      expr: node_memory_MemFree_bytes / 1073741824
+      
+  - name: custom_disk_rules
+    rules:
+    - record: node_filesystem_free_percent
+      expr: 100 * node_filesystem_free_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}    
+      
+  - name: custom_cpu_rules
+    rules:
+    - record: node_cpu_seconds_total_used_percent
+      expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{job="ppims-node-exporter", mode="idle"}[1m]) * 100))

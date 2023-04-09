@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  labels:
+    app: postgres
+data:
+  POSTGRES_HOST: postgres
+  POSTGRES_DB: postgresdb
+  POSTGRES_USER: postgres
+  #POSTGRES_PASSWORD: p0stGrE@p3$l
+  
+---
+apiVersion: v1
+data:
+  POSTGRES_PASSWORD: cDBzdEdyRUBwMyRs
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: postgres-secret
+  
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: postgres-database-pv
+  labels:
+    type: local
+    app: postgres
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/pv/database"
+    
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-database-pvc
+  labels:
+    app: postgres
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+      
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13.1
+          args: ["-c", "max_connections=1000"]
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_PASSWORD
+                
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+      tolerations:
+        - key: "db"
+          value: "postgres"
+          operator: "Equal"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: db
+                operator: In
+                values:
+                - postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-database-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  ports:
+  - name: postgres-in-port
+    port: 5432
+    protocol: TCP
+    targetPort: 5432  
+  selector:
+   app: postgres
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-out-port
+  labels:
+    app: postgres
+spec:
+  type: NodePort
+  ports:
+  - name: postgrers-out-port
+    nodePort: 30020
+    port: 5432
+    protocol: TCP
+    targetPort: 5432  
+  selector:
+   app: postgres
