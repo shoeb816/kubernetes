@@ -1,0 +1,137 @@
+######################Install Ingress with helm
+shoeb@kmaster02:/kubernetessudo helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+shoeb@kmaster02:/kubernetessudo helm search repo
+shoeb@kmaster02:/kubernetessudo helm show values ingress-nginx/ingress-nginx > ingress-nginx.yaml
+
+shoeb@kmaster02:/kubernetesvi ingress-nginx.yaml
+  hostNetwork: true
+  hostPort:
+    # -- Enable 'hostPort' or not
+    enabled: true
+
+  kind: DaemonSet
+
+shoeb@kmaster02:/kubernetessudo helm install clusteringress ingress-nginx/ingress-nginx -n ingress-nginx --values ingress-nginx.yaml
+
+###in HA
+shoeb@kmaster02:/kubernetessudo helm install clusteringress ingress-nginx/ingress-nginx -n ingress-nginx --values ingress-nginx.yaml --kubeconfig /home/shoeb/.kube/config
+
+shoeb@kmaster02:/kuberneteskubectl config view --raw
+shoeb@kmaster02:/kuberneteskubectl get all -n ingress-nginx
+
+######################Install MetalLB
+shoeb@kmaster02:/kuberneteskubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.9/config/manifests/metallb-native.yaml
+
+shoeb@kmaster02:/kubernetesvi ipaddresspool.yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: first-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.1.248-192.168.1.250
+
+
+
+shoeb@kmaster02:/kuberneteskubectl apply -f ipaddresspool.yaml
+
+
+shoeb@kmaster02:/kubernetesvi l2advertisement.yaml
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2dvertisement
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - first-pool
+
+shoeb@kmaster02:/kuberneteskubectl apply -f l2advertisement.yaml
+
+shoeb@kmaster02:/kuberneteskubectl apply -f nginx-deploy-main.yaml
+shoeb@kmaster02:/kuberneteskubectl apply -f nginx-deploy-blue.yaml
+shoeb@kmaster02:/kuberneteskubectl apply -f nginx-deploy-green.yaml
+
+shoeb@kmaster02:/kuberneteskubectl expose deploy nginx-deploy-main --port=80
+shoeb@kmaster02:/kuberneteskubectl expose deploy nginx-deploy-blue --port=80
+shoeb@kmaster02:/kuberneteskubectl expose deploy nginx-deploy-green --port=80
+
+shoeb@kmaster02:/kubernetesvi ingress-resource-1.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-resource-1
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: nginx.kpp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deploy-main
+            port: 
+              number: 80
+
+  - host: blue.nginx.kpp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deploy-blue
+            port: 
+              number: 80
+
+  - host: green.nginx.kpp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deploy-green
+            port: 
+              number: 80
+
+shoeb@kmaster02:/kubernetesvi ingress-resource-3.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: ingress-resource-3
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: nginx.ibcs.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deploy-main
+            port:
+              number: 80
+      - path: /blue
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deploy-blue
+            port:
+              number: 80
+      - path: /green
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-deploy-green
+            port:
+              number: 80
+
+shoeb@kmaster02:/kuberneteskubectl apply -f ingress-resource-1.yaml
+shoeb@kmaster02:/kuberneteskubectl apply -f ingress-resource-3.yaml
