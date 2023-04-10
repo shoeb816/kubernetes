@@ -1,0 +1,14 @@
+root@kmaster01:~# sudo kubeadm certs check-expiration	
+root@kmaster01:~# ls -latr /etc/kubernetes/pki/
+root@kmaster01:~# kubeadm certs renew all
+
+sudo vi /etc/crictl.yaml
+runtime-endpoint: unix:///run/containerd/containerd.sock
+image-endpoint: unix:///run/containerd/containerd.sock
+timeout: 2
+debug: true
+pull-image-on-create: false
+
+shoeb@kmaster01:~$ sudo crictl pods
+
+move mainfests file one by one and back to renew certificates /etc/kubernetes/manifests/
