@@ -1,4 +1,5 @@
 https://github.com/kubernetes/dashboard/tree/master/docs/user
+https://github.com/kubernetes/dashboard/blob/master/docs/user/certificate-management.md
 
 shoeb@master:/kubernetes/dashboard$openssl genrsa -des3 -passout pass:over4chars -out dashboard.pass.key 2048
 shoeb@master:/kubernetes/dashboard$openssl rsa -passin pass:over4chars -in dashboard.pass.key -out dashboard.key
@@ -45,3 +46,60 @@ shoeb@master:/kubernetes/dashboard$ kubectl create --edit -f https://raw.githubu
 		  
 shoeb@master:/kubernetes/dashboard$ kubectl -n kubernetes-dashboard create token admin-user
 
+
+================================================================================================================================
+openssl genrsa -des3 -passout pass:over4chars -out dashboard.pass.key 2048
+openssl rsa -passin pass:over4chars -in dashboard.pass.key -out dashboard.key
+rm dashboard.pass.key
+openssl req -new -key dashboard.key -out dashboard.csr
+openssl x509 -req -sha256 -days 3650 -in dashboard.csr -signkey dashboard.key -out dashboard.crt
+
+# kubectl create secret generic --type=Opaque default-server-secret --from-file=tls.crt=tls_self.crt --from-file=tls.key=tls_self.key -n nginx-ingress
+
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tls-example-ingress
+spec:
+  tls:
+  - hosts:
+      - https-example.foo.com
+    secretName: testsecret-tls
+  rules:
+  - host: https-example.foo.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80
+			  
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF			  
+			  
+			  
+			  
+shoeb@master:/kubernetes/dashboard$ kubectl -n kubernetes-dashboard create token admin-user
