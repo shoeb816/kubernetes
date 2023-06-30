@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+  labels:
+    app: aggregator
+    app.kubernetes.io/component: aggregator
+    app.kubernetes.io/instance: fluentd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: fluentd
+    helm.sh/chart: fluentd-3.6.2
+  name: fluentd
+  namespace: monitoring
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: aggregator
+      app.kubernetes.io/instance: fluentd
+      app.kubernetes.io/name: fluentd
+  serviceName: fluentd-headless
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: aggregator
+        app.kubernetes.io/component: aggregator
+        app.kubernetes.io/instance: fluentd
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: fluentd
+        helm.sh/chart: fluentd-3.6.2
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: aggregator
+                  app.kubernetes.io/instance: fluentd
+                  app.kubernetes.io/name: fluentd
+              namespaces:
+              - monitoring
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - env:
+        - name: FLUENTD_CONF
+          value: fluentd.conf
+        - name: FLUENTD_OPT
+        - name: ELASTICSEARCH_HOST
+          value: 192.168.1.12
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        image: docker.io/bitnami/fluentd:1.14.0-debian-10-r9
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /fluentd.healthcheck?json=%7B%22ping%22%3A+%22pong%22%7D
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: fluentd
+        ports:
+        - containerPort: 24224
+          name: tcp
+          protocol: TCP
+        - containerPort: 9880
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /fluentd.healthcheck?json=%7B%22ping%22%3A+%22pong%22%7D
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /opt/bitnami/fluentd/conf
+          name: fluentd-config
+        - mountPath: /opt/bitnami/fluentd/logs/buffers
+          name: buffer
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1001
+        runAsGroup: 1001
+        runAsUser: 1001
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: elasticsearch-output
+        name: fluentd-config
+      - emptyDir: {}
+        name: buffer
+  updateStrategy:
+    type: RollingUpdate

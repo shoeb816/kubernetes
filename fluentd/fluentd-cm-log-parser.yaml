@@ -1,0 +1,125 @@
+apiVersion: v1
+data:
+  fluentd.conf: |2
+    #<system>
+    #  @log_level debug
+    #  workers 2
+    #  root_dir /var/log/fluent/
+    #</system>
+
+    # Ignore fluentd own events
+    <label @FLUENT_LOG>
+      <match fluent.*>
+        @type null
+      </match>
+    </label>
+
+    #<match fluent.**>
+    #  @type null
+    #</match>
+
+    # HTTP input for the liveness and readiness probes
+    <source>
+      @type http
+      port 9880
+    </source>
+
+    # Throw the healthcheck to the standard output instead of forwarding it
+    <match fluentd.healthcheck>
+      @type stdout
+    </match>
+
+    # Get the logs from the containers running in the cluster
+
+
+    <source>
+      @type tail
+      path /var/log/containers/nginx-deploy-blue*.log
+      pos_file /opt/bitnami/fluentd/logs/buffers/nginx-deploy-blue-docker.pos
+      tag blue-api.*
+      <parse>
+        @type multi_format
+        <pattern>
+          format json
+          time_key time
+          time_format %Y-%m-%dT%H:%M:%S.%NZ
+        </pattern>
+        <pattern>
+          format /^(?<time>.+) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
+          time_format %Y-%m-%dT%H:%M:%S.%N%:z
+        </pattern>
+      </parse>
+    </source>
+
+    <source>
+      @type tail
+      path /var/log/containers/nginx-deploy-green*.log
+      pos_file /opt/bitnami/fluentd/logs/buffers/nginx-deploy-green-docker.pos
+      tag green-api.*
+      <parse>
+        @type multi_format
+        <pattern>
+          format json
+          time_key time
+          time_format %Y-%m-%dT%H:%M:%S.%NZ
+        </pattern>
+        <pattern>
+          format /^(?<time>.+) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
+          time_format %Y-%m-%dT%H:%M:%S.%N%:z
+        </pattern>
+      </parse>
+    </source>
+
+    <filter *-api.**>
+      @id filter_kubernetes_metadata
+      @type kubernetes_metadata
+      tag_to_kubernetes_name_regexp '.+?\.containers\.(?<pod_name>[^_]+)_(?<namespace>[^_]+)_(?<container_name>.+)-(?<docker_id>[a-z0-9]{64})\.log$'
+      skip_container_metadata true
+      skip_labels true
+      skip_master_url true
+      skip_namespace_metadata
+    </filter>
+
+    <filter *-api.**>
+      @type record_transformer
+      enable_ruby true
+      remove_keys $.kubernetes.pod_id, $.kubernetes.master_url, $.kubernetes.container_image_id, $.kubernetes.namespace_id, $.docker.container_id, $.kubernetes.host, $.kubernetes.pod_ip
+    </filter>
+
+    # Forward all logs to the aggregators
+    <match **>
+      @type forward
+      #reload_connections false
+      #reconnect_on_error true
+      #reload_on_failure true
+      slow_flush_log_threshold 100
+      <server>
+        host fluentd-0.fluentd-headless.monitoring.svc.cluster.local
+        port 24224
+      </server>
+
+      <server>
+        host fluentd-1.fluentd-headless.monitoring.svc.cluster.local
+        port 24224
+        
+      </server>
+      
+      <server>
+        host fluentd-0.fluentd-headless.monitoring.svc.cluster.local
+        port 24224
+        standby
+      </server>
+      
+      <buffer>
+        @type file
+        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+        flush_thread_count 8
+        flush_interval 60s
+      </buffer>
+    </match>
+    
+kind: ConfigMap
+metadata:
+  annotations:
+  name: log-parser
+  namespace: monitoring

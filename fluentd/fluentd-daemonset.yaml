@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    meta.helm.sh/release-name: fluentd
+  labels:
+    app: forwarder
+    app.kubernetes.io/component: forwarder
+    app.kubernetes.io/instance: fluentd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: fluentd
+    helm.sh/chart: fluentd-3.6.2
+  name: fluentd
+  namespace: monitoring
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: forwarder
+      app.kubernetes.io/instance: fluentd
+      app.kubernetes.io/name: fluentd
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: forwarder
+        app.kubernetes.io/component: forwarder
+        app.kubernetes.io/instance: fluentd
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: fluentd
+        helm.sh/chart: fluentd-3.6.2
+    spec:
+      affinity: {}
+      containers:
+      - env:
+        - name: FLUENTD_CONF
+          value: fluentd.conf
+        - name: FLUENTD_OPT
+        - name: FLUENTD_DAEMON_USER
+          value: root
+        - name: FLUENTD_DAEMON_GROUP
+          value: root
+        image: docker.io/bitnami/fluentd:1.12.1-debian-10-r0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /fluentd.pod.healthcheck?json=%7B%22log%22%3A+%22health+check%22%7D
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: fluentd
+        ports:
+        - containerPort: 9880
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /fluentd.pod.healthcheck?json=%7B%22log%22%3A+%22health+check%22%7D
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /opt/bitnami/fluentd/conf
+          name: fluentd-config
+        - mountPath: /opt/bitnami/fluentd/logs/buffers
+          name: buffer
+        - mountPath: /var/log
+          name: varlog
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsUser: 0
+      serviceAccount: fluentd-forwarder
+      serviceAccountName: fluentd-forwarder
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: log-parser
+        name: fluentd-config
+      - emptyDir: {}
+        name: buffer
+      - hostPath:
+          path: /var/log
+          type: ""
+        name: varlog
+      - hostPath:
+          path: /var/lib/docker/containers
+          type: ""
+        name: varlibdockercontainers
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
