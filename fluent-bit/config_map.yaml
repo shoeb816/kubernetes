@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: monitoring
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush        5
+        Log_Level    info
+        Daemon       off
+        Parsers_File parsers.conf
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*.log
+        Parser            custom_log_parser
+        #multiline.parser    custom_log_parser, docker, access_log_parser, json_parser, custom_http_log_parser
+        Tag               kube.*
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+        Read_from_Head    true
+
+    [FILTER]
+        Name           kubernetes
+        Match          kube.*
+        Merge_Log      On
+        Merge_Log_Trim Off
+        Labels         On
+        Annotations    Off
+        Keep_Log       Off
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude Off
+        Namespace_Labels On
+    
+    # [FILTER]
+    #     Name              parser
+    #     Match             kube.*
+    #     Key_Name          log
+    #     Parser            json_parser, custom_http_log_parser, access_log_parser
+    #     Reserve_Data      On
+
+    [FILTER]
+        Name nest
+        Match kube.*
+        Operation lift
+        Nested_under kubernetes
+        Add_prefix   kubernetes_
+
+    [FILTER]
+        Name grep
+        Match kube.*
+        Exclude log ^playback Service is running!
+        Exclude             kubernetes_namespace_name kube-system
+        Exclude             kubernetes_namespace_name gke-gmp-system
+        Exclude             kubernetes_namespace_name gke-managed-cim
+        Exclude             kubernetes_namespace_name gke-managed-filestorecsi
+        Exclude             kubernetes_namespace_name gke-managed-system
+        Exclude             kubernetes_namespace_name gke-managed-volumepopulator
+        Exclude             kubernetes_namespace_name gmp-public
+        Exclude             kubernetes_namespace_name kube-node-lease
+        Exclude             kubernetes_namespace_name kube-public
+        Exclude             kubernetes_namespace_name monitoring
+        Exclude             kubernetes_namespace_name newrelic
+
+    [FILTER]
+        Name modify
+        Match kube.*
+        Rename log content
+        Rename kubernetes_pod_name k8s.pod.name
+        Rename kubernetes_namespace_name k8s.namespace.name
+        Remove kubernetes_host
+        Remove kubernetes_namespace.name
+        Remove kubernetes_pod_id
+        Remove kubernetes_container_name
+        Remove kubernetes_docker_id
+        Remove kubernetes_container_hash
+        Remove kubernetes_container_image
+        Remove kubernetes_pod_ip
+        Remove kubernetes_labels.pod-template-hash
+        Remove kubernetes_namespace.labels.kubernetes.io/metadata.name
+
+    [OUTPUT]
+        Name          es
+        Match         kube.*
+        Host          {Elastic_IP}
+        Port          {Elastic_Port}
+        Index         gke-flu-logs
+        HTTP_User     {Elastic_UserName}
+        HTTP_Passwd   {Elastic_Password}
+        Trace_Error   On
+        Buffer_Size   768M
+        Type          _doc
+
+  parsers.conf: |
+    [PARSER]
+        Name        custom_log_parser
+        Format      regex
+        Regex       ^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z) (stdout|stderr) F (?<log>.*)$
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%LZ
+        Time_Keep   On
+
+    [PARSER]
+        Name        json_parser
+        Format      json
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%LZ
+        Time_Keep   On
+    
+    [PARSER]
+        Name        docker
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+
+    [PARSER]
+        Name        custom_http_log_parser
+        Format      regex
+        Regex       ^\{"level":"(?<level>[^"]+)","message":"(?<message>[^"]+)","method":"(?<method>[^"]+)","resContentLength":"(?<resContentLength>\d+)","responseTime":(?<responseTime>[\d\.]+),"status":(?<status>\d+),"timestamp":"(?<timestamp>[^"]+)","url":"(?<url>[^"]+)"\}$
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%LZ
+
+    [PARSER]
+        Name        custom_access_log_parser
+        Format      regex
+        Regex       ^INFO: (?<client_ip>[\d\.]+):(?<client_port>\d+) - "(?<method>[A-Z]+) (?<url>[^ ]+) HTTP/(?<http_version>\d+\.\d+)" (?<status>\d+) (?<status_text>[A-Za-z ]+)$
+    
+    [PARSER]
+        Name        access_log_parser
+        Format      regex
+        Regex       ^INFO: (?<client_ip>[0-9\.]+):(?<port>\d+) - "(?<method>\w+) (?<path>[^ ]+) HTTP/(?<http_version>\d\.\d)" (?<status>\d+) (?<status_text>[^\n]+)$

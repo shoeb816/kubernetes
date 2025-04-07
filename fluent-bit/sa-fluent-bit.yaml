@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: "2025-03-29T07:20:53Z"
+  name: fluent-bit
+  namespace: monitoring
+  resourceVersion: "482555724"
+  uid: 2926c445-7fb0-44eb-b546-d4efb23192a2
